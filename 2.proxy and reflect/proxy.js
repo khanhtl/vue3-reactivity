@@ -1,11 +1,11 @@
 const targetMap = new WeakMap();
 const product = reactive({ price: 5, quantity: 2 });
-let total = product.price * product.quantity;
+let total = 0;
 
 function effect() {
   total = product.price * product.quantity;
 }
-
+effect();
 function track(target, key) {
   let depsMap = targetMap.get(target);
   if (!depsMap) {
