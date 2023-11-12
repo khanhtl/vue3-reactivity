@@ -2,13 +2,15 @@ const targetMap = new WeakMap();
 const product = reactive({ price: 5, quantity: 2 });
 let activeEffect = null;
 let total = 0;
+let salePrice = ref(0);
 
 function effect(eff) {
   activeEffect = eff;
   activeEffect();
   activeEffect = null;
 }
-effect(() => (total = product.price * product.quantity));
+effect(() => (salePrice.value = product.price * 0.9))
+effect(() => (total = salePrice.value * product.quantity));
 
 function track(target, key) {
   if (activeEffect) {
@@ -51,8 +53,22 @@ function reactive(target) {
   return new Proxy(target, handler);
 }
 
-console.log(total);
-product.price = 12;
-console.log(total);
+function ref(raw) {
+    const r = {
+        get value() {
+            track(r, 'value');
+            return raw;
+        },
+        set value(newVal) {
+            raw = newVal;
+            trigger(r, 'value');
+        }
+    }
+    return r;
+}
+
+console.log('total: ', total);
+console.log('salePrice: ' ,salePrice.value);
 product.price = 15;
-console.log(total);
+console.log('total: ', total);
+console.log('salePrice: ' ,salePrice.value);
