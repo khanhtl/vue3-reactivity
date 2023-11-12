@@ -1,21 +1,27 @@
 const targetMap = new WeakMap();
 const product = reactive({ price: 5, quantity: 2 });
+let activeEffect = null;
 let total = 0;
 
-function effect() {
-  total = product.price * product.quantity;
+function effect(eff) {
+  activeEffect = eff;
+  activeEffect();
+  activeEffect = null;
 }
-effect();
+effect(() => (total = product.price * product.quantity));
+
 function track(target, key) {
-  let depsMap = targetMap.get(target);
-  if (!depsMap) {
-    targetMap.set(target, (depsMap = new Map()));
+  if (activeEffect) {
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+      targetMap.set(target, (depsMap = new Map()));
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+      depsMap.set(key, (dep = new Set()));
+    }
+    dep.add(activeEffect);
   }
-  let dep = depsMap.get(key);
-  if (!dep) {
-    depsMap.set(key, (dep = new Set()));
-  }
-  dep.add(effect);
 }
 function trigger(target, key) {
   let depsMap = targetMap.get(target);
@@ -33,12 +39,12 @@ function reactive(target) {
       track(target, key);
       return result;
     },
-      set(target, key, value, receiver) {
-          let oldValue = target[key];
-          let result = Reflect.set(...arguments);
-          if (result && oldValue != value) {
-              trigger(target, key);
-          }
+    set(target, key, value, receiver) {
+      let oldValue = target[key];
+      let result = Reflect.set(...arguments);
+      if (result && oldValue != value) {
+        trigger(target, key);
+      }
       return result;
     },
   };
@@ -48,4 +54,5 @@ function reactive(target) {
 console.log(total);
 product.price = 12;
 console.log(total);
-console.log(product.price);
+product.price = 15;
+console.log(total);
